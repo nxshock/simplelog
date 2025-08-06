@@ -16,27 +16,29 @@ import (
 type LogLevel int
 
 const (
-	LogLevelProgress LogLevel = iota
-	LogLevelTrace
+	LogLevelTrace LogLevel = iota
 	LogLevelDebug
 	LogLevelInfo
 	LogLevelWarning
 	LogLevelError
 	LogLevelFatal
+	LogLevelProgress LogLevel = 9
 )
+
+const defaulLogLevel = LogLevelInfo
 
 var (
 	defaultFileTimestampFormat     = "2006-01-02 15:04:05"
 	defaultTerminalTimestampFormat = "15:04:05"
 
 	defaultTimestampStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("#808080"))
-	defaultProgressStyle  = lipgloss.NewStyle().Foreground(lipgloss.Color("#808080"))
 	defaultTraceStyle     = lipgloss.NewStyle().Foreground(lipgloss.Color("#808080"))
 	defaultDebugStyle     = lipgloss.NewStyle().Foreground(lipgloss.Color("#808080"))
-	defaultInfoStyle      = lipgloss.NewStyle().Foreground(lipgloss.Color("#cccccc"))
-	defaultWarningStyle   = lipgloss.NewStyle().Foreground(lipgloss.Color("#ffff80"))
-	defaultErrorStyle     = lipgloss.NewStyle().Foreground(lipgloss.Color("#ff0000"))
-	defaultFatalStyle     = lipgloss.NewStyle().Foreground(lipgloss.Color("#ff0000"))
+	// defaultInfoStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("#cccccc"))
+	defaultWarningStyle  = lipgloss.NewStyle().Foreground(lipgloss.Color("#ffff80"))
+	defaultErrorStyle    = lipgloss.NewStyle().Foreground(lipgloss.Color("#ff0000"))
+	defaultFatalStyle    = lipgloss.NewStyle().Foreground(lipgloss.Color("#ff0000"))
+	defaultProgressStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("#808080"))
 )
 
 type Logger struct {
@@ -49,7 +51,7 @@ type Logger struct {
 	TimeStampStyle lipgloss.Style
 
 	// log level styles
-	Styles map[LogLevel]lipgloss.Style
+	Styles map[LogLevel]*lipgloss.Style
 
 	// strip message from spaces before output
 	StripMessages bool
@@ -59,6 +61,8 @@ type Logger struct {
 
 	// last written progress message length
 	lastProgressLineWidth int
+
+	Level LogLevel
 
 	// mutex to prevent race conditions
 	mu *sync.Mutex
@@ -92,20 +96,22 @@ func NewLogger(w io.Writer) *Logger {
 	logger := &Logger{
 		Writer:         w,
 		TimeStampStyle: defaultTimestampStyle,
-		Styles:         make(map[LogLevel]lipgloss.Style),
+		Styles:         make(map[LogLevel]*lipgloss.Style),
+		Level:          defaulLogLevel,
 		mu:             new(sync.Mutex)}
 
-	logger.Styles[LogLevelProgress] = defaultProgressStyle
-	logger.Styles[LogLevelTrace] = defaultTraceStyle
-	logger.Styles[LogLevelDebug] = defaultDebugStyle
-	logger.Styles[LogLevelInfo] = defaultInfoStyle
-	logger.Styles[LogLevelWarning] = defaultWarningStyle
-	logger.Styles[LogLevelError] = defaultErrorStyle
-	logger.Styles[LogLevelFatal] = defaultFatalStyle
+	logger.Styles[LogLevelTrace] = &defaultTraceStyle
+	logger.Styles[LogLevelDebug] = &defaultDebugStyle
+	// logger.Styles[LogLevelInfo] = &defaultInfoStyle
+	logger.Styles[LogLevelWarning] = &defaultWarningStyle
+	logger.Styles[LogLevelError] = &defaultErrorStyle
+	logger.Styles[LogLevelFatal] = &defaultFatalStyle
+	logger.Styles[LogLevelProgress] = &defaultProgressStyle
 
 	if f, ok := w.(*os.File); ok {
 		logger.isTerminal = term.IsTerminal(int(f.Fd()))
 	}
+
 	if logger.isTerminal {
 		logger.TimeFormat = defaultTerminalTimestampFormat
 	} else {
@@ -242,10 +248,15 @@ func (l *Logger) Printf(logLevel LogLevel, format string, a ...any) (n int, err 
 }
 
 func (l *Logger) Println(logLevel LogLevel, a ...any) (n int, err error) {
-	return l.p(logLevel, fmt.Sprint(a...))
+	s := fmt.Sprintln(a...)
+	return l.p(logLevel, s[:len(s)-1])
 }
 
 func (l *Logger) p(logLevel LogLevel, s string) (n int, err error) {
+	if logLevel < l.Level {
+		return 0, nil
+	}
+
 	l.mu.Lock()
 	defer l.mu.Unlock()
 
@@ -259,8 +270,13 @@ func (l *Logger) p(logLevel LogLevel, s string) (n int, err error) {
 	}
 
 	if l.isTerminal {
-		msg.TimeStamp = l.TimeStampStyle.Render(msg.TimeStamp)
-		msg.Text = l.Styles[logLevel].Render(msg.Text)
+		if msg.TimeStamp != "" {
+			msg.TimeStamp = l.TimeStampStyle.Render(msg.TimeStamp)
+		}
+		style, exists := l.Styles[logLevel]
+		if exists && style != nil {
+			msg.Text = l.Styles[logLevel].Render(msg.Text)
+		}
 	} else {
 		msg.Prefix = l.prefix(logLevel)
 	}
