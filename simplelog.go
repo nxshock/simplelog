@@ -205,16 +205,6 @@ func (l *Logger) Fatalln(a ...any) {
 	os.Exit(1)
 }
 
-// clearAfterProgress clears line if next message length is shorter that previous message length.
-func (l *Logger) clearAfterProgress(nextLogLevel LogLevel, nextWidth int) {
-	if !l.isTerminal || l.lastProgressLineWidth == 0 || (nextLogLevel == LogLevelProgress && nextWidth >= l.lastProgressLineWidth) {
-		return
-	}
-
-	fmt.Fprint(l.Writer, strings.Repeat(" ", min(l.GetWidth(), l.lastProgressLineWidth))+"\r")
-	l.lastProgressLineWidth = 0
-}
-
 func (l *Logger) timestamp() string {
 	if l.TimeFormat == "" {
 		return ""
@@ -281,18 +271,22 @@ func (l *Logger) p(logLevel LogLevel, s string) (n int, err error) {
 		msg.Prefix = l.prefix(logLevel)
 	}
 
-	if logLevel == LogLevelProgress {
-		msg.Text += "\r"
-	} else {
-		msg.Text += "\n"
-	}
-
 	str := msg.String()
 	w := lipgloss.Width(str)
-	l.clearAfterProgress(logLevel, w)
+
+	if l.isTerminal && w < l.lastProgressLineWidth {
+		str += strings.Repeat(" ", min(l.lastProgressLineWidth-w, l.GetWidth()-w))
+		l.lastProgressLineWidth = 0
+	}
 
 	if logLevel == LogLevelProgress {
 		l.lastProgressLineWidth = w
+	}
+
+	if logLevel == LogLevelProgress {
+		str += "\r"
+	} else {
+		str += "\n"
 	}
 
 	return l.Writer.Write([]byte(str))
