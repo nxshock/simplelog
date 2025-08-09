@@ -1,4 +1,4 @@
-module simplelog
+module github.com/nxshock/simplelog
 
 go 1.24.5
 
