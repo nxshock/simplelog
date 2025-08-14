@@ -267,7 +267,9 @@ func (l *Logger) p(logLevel LogLevel, s string) (n int, err error) {
 	}
 
 	if l.isTerminal {
-		msg.fit(l.getWidth(), l.TrimMarker)
+		if logLevel == LogLevelProgress {
+			msg.fit(l.getWidth(), l.TrimMarker)
+		}
 
 		if msg.TimeStamp != "" {
 			msg.TimeStamp = l.TimeStampStyle.Render(msg.TimeStamp)
