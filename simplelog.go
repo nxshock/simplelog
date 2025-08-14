@@ -1,7 +1,6 @@
 package simplelog
 
 import (
-	"cmp"
 	"fmt"
 	"io"
 	"os"
@@ -19,7 +18,7 @@ const (
 	LogLevelTrace LogLevel = iota
 	LogLevelDebug
 	LogLevelInfo
-	LogLevelWarning
+	LogLevelWarn
 	LogLevelError
 	LogLevelFatal
 	LogLevelProgress LogLevel = 9
@@ -103,7 +102,7 @@ func NewLogger(w io.Writer) *Logger {
 	logger.Styles[LogLevelTrace] = &defaultTraceStyle
 	logger.Styles[LogLevelDebug] = &defaultDebugStyle
 	// logger.Styles[LogLevelInfo] = &defaultInfoStyle
-	logger.Styles[LogLevelWarning] = &defaultWarningStyle
+	logger.Styles[LogLevelWarn] = &defaultWarningStyle
 	logger.Styles[LogLevelError] = &defaultErrorStyle
 	logger.Styles[LogLevelFatal] = &defaultFatalStyle
 	logger.Styles[LogLevelProgress] = &defaultProgressStyle
@@ -121,11 +120,14 @@ func NewLogger(w io.Writer) *Logger {
 	return logger
 }
 
-func min[T cmp.Ordered](a, b T) T {
-	if a < b {
-		return a
+func minNotLessThanZero(a, b int) int {
+	tmp := min(a, b)
+
+	if tmp < 0 {
+		return 0
 	}
-	return b
+
+	return tmp
 }
 
 func levelSymbol(logLevel LogLevel) string {
@@ -136,7 +138,7 @@ func levelSymbol(logLevel LogLevel) string {
 		return "DBG"
 	case LogLevelInfo:
 		return "INF"
-	case LogLevelWarning:
+	case LogLevelWarn:
 		return "WRN"
 	case LogLevelError:
 		return "ERR"
@@ -165,27 +167,27 @@ func (l *Logger) GetWidth() int {
 	return w
 }
 
+func (l *Logger) Trace(a ...any) (n int, err error) {
+	return l.Print(LogLevelTrace, a...)
+}
+
+func (l *Logger) Debug(a ...any) (n int, err error) {
+	return l.Print(LogLevelDebug, a...)
+}
+
 func (l *Logger) Info(a ...any) (n int, err error) {
 	return l.Print(LogLevelInfo, a...)
 }
 
-func (l *Logger) Infof(format string, a ...any) (n int, err error) {
-	return l.Printf(LogLevelInfo, format, a...)
+func (l *Logger) Warn(a ...any) (n int, err error) {
+	return l.Print(LogLevelWarn, a...)
 }
 
-func (l *Logger) Warnf(format string, a ...any) (n int, err error) {
-	return l.Printf(LogLevelWarning, format, a...)
+func (l *Logger) Error(a ...any) (n int, err error) {
+	return l.Print(LogLevelError, a...)
 }
 
-func (l *Logger) Errorf(format string, a ...any) (n int, err error) {
-	return l.Printf(LogLevelError, format, a...)
-}
-
-func (l *Logger) Infoln(a ...any) (n int, err error) {
-	return l.Println(LogLevelInfo, a...)
-}
-
-func (l Logger) Fatal(a ...any) {
+func (l *Logger) Fatal(a ...any) {
 	l.mu.Lock()
 	l.Print(LogLevelFatal, a...)
 	l.mu.Unlock()
@@ -193,14 +195,58 @@ func (l Logger) Fatal(a ...any) {
 	os.Exit(1)
 }
 
-func (l *Logger) Fatalf(format string, a ...any) {
-	l.Printf(LogLevelFatal, format, a...)
+func (l *Logger) Traceln(a ...any) (n int, err error) {
+	return l.Println(LogLevelTrace, a...)
+}
 
-	os.Exit(1)
+func (l *Logger) Debugln(a ...any) (n int, err error) {
+	return l.Println(LogLevelDebug, a...)
+}
+
+func (l *Logger) Infoln(a ...any) (n int, err error) {
+	return l.Println(LogLevelInfo, a...)
+}
+
+func (l *Logger) Warnln(a ...any) (n int, err error) {
+	return l.Println(LogLevelWarn, a...)
+}
+
+func (l *Logger) Errorln(a ...any) (n int, err error) {
+	return l.Println(LogLevelError, a...)
 }
 
 func (l *Logger) Fatalln(a ...any) {
 	l.Println(LogLevelError, a...)
+
+	if f, ok := l.Writer.(*os.File); ok {
+		f.Sync()
+	}
+
+	os.Exit(1)
+}
+
+func (l *Logger) Tracef(format string, a ...any) (n int, err error) {
+	return l.Printf(LogLevelInfo, format, a...)
+}
+
+func (l *Logger) Debugf(format string, a ...any) (n int, err error) {
+	return l.Printf(LogLevelInfo, format, a...)
+}
+
+func (l *Logger) Infof(format string, a ...any) (n int, err error) {
+	return l.Printf(LogLevelInfo, format, a...)
+}
+
+func (l *Logger) Warnf(format string, a ...any) (n int, err error) {
+	return l.Printf(LogLevelWarn, format, a...)
+}
+
+func (l *Logger) Errorf(format string, a ...any) (n int, err error) {
+	return l.Printf(LogLevelError, format, a...)
+}
+
+func (l *Logger) Fatalf(format string, a ...any) {
+	l.Printf(LogLevelFatal, format, a...)
 
 	os.Exit(1)
 }
@@ -275,7 +321,7 @@ func (l *Logger) p(logLevel LogLevel, s string) (n int, err error) {
 	w := lipgloss.Width(str)
 
 	if l.isTerminal && w < l.lastProgressLineWidth {
-		str += strings.Repeat(" ", min(l.lastProgressLineWidth-w, l.GetWidth()-w))
+		str += strings.Repeat(" ", minNotLessThanZero(l.lastProgressLineWidth-w, l.GetWidth()-w))
 		l.lastProgressLineWidth = 0
 	}
 
