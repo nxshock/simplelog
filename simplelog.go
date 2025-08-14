@@ -12,34 +12,6 @@ import (
 	"golang.org/x/term"
 )
 
-type LogLevel int
-
-const (
-	LogLevelTrace LogLevel = iota
-	LogLevelDebug
-	LogLevelInfo
-	LogLevelWarn
-	LogLevelError
-	LogLevelFatal
-	LogLevelProgress LogLevel = 9
-)
-
-const defaulLogLevel = LogLevelInfo
-
-var (
-	defaultFileTimestampFormat     = "2006-01-02 15:04:05"
-	defaultTerminalTimestampFormat = "15:04:05"
-
-	defaultTimestampStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("#808080"))
-	defaultTraceStyle     = lipgloss.NewStyle().Foreground(lipgloss.Color("#808080"))
-	defaultDebugStyle     = lipgloss.NewStyle().Foreground(lipgloss.Color("#808080"))
-	// defaultInfoStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("#cccccc"))
-	defaultWarningStyle  = lipgloss.NewStyle().Foreground(lipgloss.Color("#ffff80"))
-	defaultErrorStyle    = lipgloss.NewStyle().Foreground(lipgloss.Color("#ff0000"))
-	defaultFatalStyle    = lipgloss.NewStyle().Foreground(lipgloss.Color("#ff0000"))
-	defaultProgressStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("#808080"))
-)
-
 type Logger struct {
 	Writer io.Writer
 
@@ -55,48 +27,36 @@ type Logger struct {
 	// strip message from spaces before output
 	StripMessages bool
 
+	// Minimum log level of messages
+	Level LogLevel
+
+	// Marker of trimmed messages
+	TrimMarker string
+
+	// MinProgressUpdatePeriod is used to limit progress update speed
+	MinProgressUpdatePeriod time.Duration
+
 	// is output to terminal
 	isTerminal bool
 
 	// last written progress message length
 	lastProgressLineWidth int
 
-	Level LogLevel
+	// Timestamp of last written progress message
+	lastProgressUpdateTime time.Time
 
 	// mutex to prevent race conditions
 	mu *sync.Mutex
 }
 
-type msg struct {
-	TimeStamp string
-	Prefix    string
-	Text      string
-}
-
-func (m *msg) String() string {
-	sb := new(strings.Builder)
-
-	if m.TimeStamp != "" {
-		sb.WriteString(m.TimeStamp)
-		sb.WriteRune(' ')
-	}
-
-	if m.Prefix != "" {
-		sb.WriteString(m.Prefix)
-		sb.WriteRune(' ')
-	}
-
-	sb.WriteString(m.Text)
-
-	return sb.String()
-}
-
+// NewLogger returns new logger which writes messages to `w`.
 func NewLogger(w io.Writer) *Logger {
 	logger := &Logger{
 		Writer:         w,
 		TimeStampStyle: defaultTimestampStyle,
 		Styles:         make(map[LogLevel]*lipgloss.Style),
 		Level:          defaulLogLevel,
+		TrimMarker:     defaultTrimMarker,
 		mu:             new(sync.Mutex)}
 
 	logger.Styles[LogLevelTrace] = &defaultTraceStyle
@@ -120,16 +80,6 @@ func NewLogger(w io.Writer) *Logger {
 	return logger
 }
 
-func minNotLessThanZero(a, b int) int {
-	tmp := min(a, b)
-
-	if tmp < 0 {
-		return 0
-	}
-
-	return tmp
-}
-
 func levelSymbol(logLevel LogLevel) string {
 	switch logLevel {
 	case LogLevelTrace:
@@ -149,7 +99,8 @@ func levelSymbol(logLevel LogLevel) string {
 	return "???"
 }
 
-func (l *Logger) GetWidth() int {
+// getWidth returns current terminal width.
+func (l *Logger) getWidth() int {
 	if !l.isTerminal {
 		return 0
 	}
@@ -251,16 +202,16 @@ func (l *Logger) Fatalf(format string, a ...any) {
 	os.Exit(1)
 }
 
-func (l *Logger) timestamp() string {
+func (l *Logger) timestamp(t time.Time) string {
 	if l.TimeFormat == "" {
 		return ""
 	}
 
 	if !l.isTerminal {
-		return time.Now().Format(l.TimeFormat)
+		return t.Format(l.TimeFormat)
 	}
 
-	return l.TimeStampStyle.Render(time.Now().Format(l.TimeFormat))
+	return l.TimeStampStyle.Render(t.Format(l.TimeFormat))
 }
 
 func (l *Logger) prefix(logLevel LogLevel) string {
@@ -289,6 +240,16 @@ func (l *Logger) Println(logLevel LogLevel, a ...any) (n int, err error) {
 }
 
 func (l *Logger) p(logLevel LogLevel, s string) (n int, err error) {
+	timeStamp := time.Now()
+
+	if logLevel == LogLevelProgress {
+		if l.MinProgressUpdatePeriod > 0 && timeStamp.Sub(l.lastProgressUpdateTime) < l.MinProgressUpdatePeriod {
+			return
+		}
+
+		l.lastProgressUpdateTime = timeStamp
+	}
+
 	if logLevel < l.Level {
 		return 0, nil
 	}
@@ -297,7 +258,7 @@ func (l *Logger) p(logLevel LogLevel, s string) (n int, err error) {
 	defer l.mu.Unlock()
 
 	msg := &msg{
-		TimeStamp: l.timestamp(),
+		TimeStamp: l.timestamp(timeStamp),
 		Text:      s,
 	}
 
@@ -306,6 +267,8 @@ func (l *Logger) p(logLevel LogLevel, s string) (n int, err error) {
 	}
 
 	if l.isTerminal {
+		msg.fit(l.getWidth(), l.TrimMarker)
+
 		if msg.TimeStamp != "" {
 			msg.TimeStamp = l.TimeStampStyle.Render(msg.TimeStamp)
 		}
@@ -321,7 +284,7 @@ func (l *Logger) p(logLevel LogLevel, s string) (n int, err error) {
 	w := lipgloss.Width(str)
 
 	if l.isTerminal && w < l.lastProgressLineWidth {
-		str += strings.Repeat(" ", minNotLessThanZero(l.lastProgressLineWidth-w, l.GetWidth()-w))
+		str += strings.Repeat(" ", max(min(l.lastProgressLineWidth-w, l.getWidth()-w), 0))
 		l.lastProgressLineWidth = 0
 	}
 
