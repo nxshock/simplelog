@@ -181,7 +181,7 @@ func (l *Logger) Tracef(format string, a ...any) (n int, err error) {
 }
 
 func (l *Logger) Debugf(format string, a ...any) (n int, err error) {
-	return l.Printf(LogLevelInfo, format, a...)
+	return l.Printf(LogLevelDebug, format, a...)
 }
 
 func (l *Logger) Infof(format string, a ...any) (n int, err error) {
