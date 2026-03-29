@@ -2,18 +2,6 @@ package simplelog
 
 import "github.com/charmbracelet/lipgloss"
 
-type LogLevel int
-
-const (
-	LogLevelTrace LogLevel = iota
-	LogLevelDebug
-	LogLevelInfo
-	LogLevelWarn
-	LogLevelError
-	LogLevelFatal
-	LogLevelProgress LogLevel = 9
-)
-
 const (
 	defaultFileTimestampFormat     = "2006-01-02 15:04:05"
 	defaultTerminalTimestampFormat = "15:04:05"
