@@ -1,6 +1,8 @@
 package simplelog
 
-import "github.com/charmbracelet/lipgloss"
+import (
+	"github.com/fatih/color"
+)
 
 const (
 	defaultFileTimestampFormat     = "2006-01-02 15:04:05"
@@ -10,12 +12,12 @@ const (
 )
 
 var (
-	defaultTimestampStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("#808080"))
-	defaultTraceStyle     = lipgloss.NewStyle().Foreground(lipgloss.Color("#808080"))
-	defaultDebugStyle     = lipgloss.NewStyle().Foreground(lipgloss.Color("#808080"))
-	// defaultInfoStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("#cccccc"))
-	defaultWarningStyle  = lipgloss.NewStyle().Foreground(lipgloss.Color("#ffff80"))
-	defaultErrorStyle    = lipgloss.NewStyle().Foreground(lipgloss.Color("#ff0000"))
-	defaultFatalStyle    = lipgloss.NewStyle().Foreground(lipgloss.Color("#ff0000"))
-	defaultProgressStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("#808080"))
+	defaultTimestampStyle = color.New(color.FgWhite).SprintFunc()
+	defaultTraceStyle     = color.New(color.FgWhite).SprintFunc()
+	defaultDebugStyle     = color.New(color.FgWhite).SprintFunc()
+	// defaultInfoStyle uses default terminal foreground color
+	defaultWarningStyle  = color.New(color.FgYellow).SprintFunc()
+	defaultErrorStyle    = color.New(color.FgRed).SprintFunc()
+	defaultFatalStyle    = color.New(color.FgRed).SprintFunc()
+	defaultProgressStyle = color.New(color.FgWhite).SprintFunc()
 )

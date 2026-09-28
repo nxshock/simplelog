@@ -19,10 +19,10 @@ type Logger struct {
 	TimeFormat string
 
 	// timestamp style
-	TimeStampStyle lipgloss.Style
+	TimeStampStyle func(a ...any) string
 
 	// log level styles
-	Styles map[LogLevel]*lipgloss.Style
+	Styles map[LogLevel]func(a ...any) string
 
 	// strip message from spaces before output
 	StripMessages bool
@@ -54,18 +54,18 @@ func NewLogger(w io.Writer) *Logger {
 	logger := &Logger{
 		Writer:         w,
 		TimeStampStyle: defaultTimestampStyle,
-		Styles:         make(map[LogLevel]*lipgloss.Style),
+		Styles:         make(map[LogLevel]func(a ...any) string),
 		Level:          defaulLogLevel,
 		TrimMarker:     defaultTrimMarker,
 		mu:             new(sync.Mutex)}
 
-	logger.Styles[LogLevelTrace] = &defaultTraceStyle
-	logger.Styles[LogLevelDebug] = &defaultDebugStyle
+	logger.Styles[LogLevelTrace] = defaultTraceStyle
+	logger.Styles[LogLevelDebug] = defaultDebugStyle
 	// logger.Styles[LogLevelInfo] = &defaultInfoStyle
-	logger.Styles[LogLevelWarn] = &defaultWarningStyle
-	logger.Styles[LogLevelError] = &defaultErrorStyle
-	logger.Styles[LogLevelFatal] = &defaultFatalStyle
-	logger.Styles[LogLevelProgress] = &defaultProgressStyle
+	logger.Styles[LogLevelWarn] = defaultWarningStyle
+	logger.Styles[LogLevelError] = defaultErrorStyle
+	logger.Styles[LogLevelFatal] = defaultFatalStyle
+	logger.Styles[LogLevelProgress] = defaultProgressStyle
 
 	if f, ok := w.(*os.File); ok {
 		logger.isTerminal = term.IsTerminal(int(f.Fd()))
@@ -211,7 +211,7 @@ func (l *Logger) timestamp(t time.Time) string {
 		return t.Format(l.TimeFormat)
 	}
 
-	return l.TimeStampStyle.Render(t.Format(l.TimeFormat))
+	return l.TimeStampStyle(t.Format(l.TimeFormat))
 }
 
 func (l *Logger) prefix(logLevel LogLevel) string {
@@ -272,11 +272,11 @@ func (l *Logger) p(logLevel LogLevel, s string) (n int, err error) {
 		}
 
 		if msg.TimeStamp != "" {
-			msg.TimeStamp = l.TimeStampStyle.Render(msg.TimeStamp)
+			msg.TimeStamp = l.TimeStampStyle(msg.TimeStamp)
 		}
 		style, exists := l.Styles[logLevel]
 		if exists && style != nil {
-			msg.Text = l.Styles[logLevel].Render(msg.Text)
+			msg.Text = l.Styles[logLevel](msg.Text)
 		}
 	} else {
 		msg.Prefix = l.prefix(logLevel)

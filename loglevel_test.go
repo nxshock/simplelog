@@ -1,6 +1,7 @@
 package simplelog
 
 import (
+	"os"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -40,5 +41,23 @@ func TestLogLevelUnmarshalText(t *testing.T) {
 		err := got.UnmarshalText(test.value)
 		assert.NoError(t, err)
 		assert.Equal(t, test.expected, got)
+	}
+}
+
+func TestView(t *testing.T) {
+	l := NewLogger(os.Stderr)
+
+	for _, test := range []struct {
+		logLevel LogLevel
+		expected []byte
+	}{
+		{logLevel: LogLevelTrace, expected: []byte("trace")},
+		{logLevel: LogLevelDebug, expected: []byte("debug")},
+		{logLevel: LogLevelInfo, expected: []byte("info")},
+		{logLevel: LogLevelWarn, expected: []byte("warn")},
+		{logLevel: LogLevelError, expected: []byte("error")},
+		{logLevel: LogLevelFatal, expected: []byte("fatal")},
+	} {
+		l.Println(test.logLevel, "Color message")
 	}
 }
