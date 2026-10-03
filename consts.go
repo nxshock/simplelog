@@ -1,6 +1,8 @@
 package simplelog
 
 import (
+	"time"
+
 	"github.com/fatih/color"
 )
 
@@ -9,6 +11,8 @@ const (
 	defaultTerminalTimestampFormat = "15:04:05"
 	defaulLogLevel                 = LogLevelInfo
 	defaultTrimMarker              = "..."
+
+	DEFAULT_PERIOD_DURATION = time.Minute
 )
 
 var (
