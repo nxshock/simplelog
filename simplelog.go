@@ -45,6 +45,9 @@ type Logger struct {
 	// Timestamp of last written progress message
 	lastProgressUpdateTime time.Time
 
+	Progresses        Progresses
+	PrintProgressFunc func(*Logger)
+
 	// mutex to prevent race conditions
 	mu *sync.Mutex
 }
@@ -52,12 +55,14 @@ type Logger struct {
 // NewLogger returns new logger which writes messages to `w`.
 func NewLogger(w io.Writer) *Logger {
 	logger := &Logger{
-		Writer:         w,
-		TimeStampStyle: defaultTimestampStyle,
-		Styles:         make(map[LogLevel]func(a ...any) string),
-		Level:          defaulLogLevel,
-		TrimMarker:     defaultTrimMarker,
-		mu:             new(sync.Mutex)}
+		Writer:            w,
+		TimeStampStyle:    defaultTimestampStyle,
+		Styles:            make(map[LogLevel]func(a ...any) string),
+		Level:             defaulLogLevel,
+		TrimMarker:        defaultTrimMarker,
+		Progresses:        make(Progresses),
+		PrintProgressFunc: defaultPrintProgressFunc,
+		mu:                new(sync.Mutex)}
 
 	logger.Styles[LogLevelTrace] = defaultTraceStyle
 	logger.Styles[LogLevelDebug] = defaultDebugStyle
@@ -301,4 +306,14 @@ func (l *Logger) p(logLevel LogLevel, s string) (n int, err error) {
 	}
 
 	return l.Writer.Write([]byte(str))
+}
+
+func (l *Logger) StartProgress(estimated uint) *Progress {
+	p := l.NewProgress(estimated)
+
+	l.Progresses[p] = struct{}{}
+
+	l.PrintProgressFunc(l)
+
+	return p
 }

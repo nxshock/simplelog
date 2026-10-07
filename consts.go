@@ -16,12 +16,28 @@ const (
 )
 
 var (
-	defaultTimestampStyle = color.New(color.FgWhite).SprintFunc()
+	defaultTimestampStyle = color.New(color.FgHiBlack).SprintFunc()
 	defaultTraceStyle     = color.New(color.FgWhite).SprintFunc()
 	defaultDebugStyle     = color.New(color.FgWhite).SprintFunc()
 	// defaultInfoStyle uses default terminal foreground color
 	defaultWarningStyle  = color.New(color.FgYellow).SprintFunc()
 	defaultErrorStyle    = color.New(color.FgRed).SprintFunc()
 	defaultFatalStyle    = color.New(color.FgRed).SprintFunc()
-	defaultProgressStyle = color.New(color.FgWhite).SprintFunc()
+	defaultProgressStyle = color.New(color.FgHiBlack).SprintFunc()
+
+	defaultPrintProgressFunc = func(l *Logger) {
+		if tc := l.Progresses.ActiveTaskCount(); tc > 1 {
+			l.Progressf("[%2d%%] %d / %d (%d tasks), %s remaining",
+				l.Progresses.Percent(),
+				l.Progresses.Elapsed(),
+				l.Progresses.Estimated(),
+				tc, l.Progresses.Remaining().Average())
+		} else {
+			l.Progressf("[%2d%%] %d / %d, %s remaining",
+				l.Progresses.Percent(),
+				l.Progresses.Elapsed(),
+				l.Progresses.Estimated(),
+				l.Progresses.Remaining().Average())
+		}
+	}
 )
