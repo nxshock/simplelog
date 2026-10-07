@@ -1,6 +1,9 @@
 package simplelog
 
-import "sync"
+import (
+	"sync"
+	"time"
+)
 
 type Progress struct {
 	ProgressItems map[*ProgressItem]struct{}
@@ -35,7 +38,7 @@ func (p *Progress) Periods(count uint) []*Period {
 		periods = append(periods, k.Periods(count)...)
 	}
 
-	return periods
+	return mergePeriods(periods, time.Minute) // TODO: change period size
 }
 
 func (p *Progress) ActiveTaskCount() uint {
