@@ -31,13 +31,13 @@ var (
 				l.Progresses.Percent(),
 				l.Progresses.Elapsed(),
 				l.Progresses.Estimated(),
-				tc, l.Progresses.Remaining().Average())
+				tc, l.Progresses.Remaining().LastPeriod())
 		} else {
 			l.Progressf("[%2d%%] %d / %d, %s remaining",
 				l.Progresses.Percent(),
 				l.Progresses.Elapsed(),
 				l.Progresses.Estimated(),
-				l.Progresses.Remaining().Average())
+				l.Progresses.Remaining().LastPeriod())
 		}
 	}
 )
