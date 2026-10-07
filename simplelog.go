@@ -45,7 +45,7 @@ type Logger struct {
 	// Timestamp of last written progress message
 	lastProgressUpdateTime time.Time
 
-	Progresses        Progresses
+	Progresses        *Progress
 	PrintProgressFunc func(*Logger)
 
 	// mutex to prevent race conditions
@@ -60,7 +60,7 @@ func NewLogger(w io.Writer) *Logger {
 		Styles:            make(map[LogLevel]func(a ...any) string),
 		Level:             defaulLogLevel,
 		TrimMarker:        defaultTrimMarker,
-		Progresses:        make(Progresses),
+		Progresses:        &Progress{ProgressItems: make(map[*ProgressItem]struct{})},
 		PrintProgressFunc: defaultPrintProgressFunc,
 		mu:                new(sync.Mutex)}
 
@@ -308,12 +308,16 @@ func (l *Logger) p(logLevel LogLevel, s string) (n int, err error) {
 	return l.Writer.Write([]byte(str))
 }
 
-func (l *Logger) StartProgress(estimated uint) *Progress {
+func (l *Logger) StartProgress(estimated uint) *ProgressItem {
 	p := l.NewProgress(estimated)
 
-	l.Progresses[p] = struct{}{}
+	l.Progresses.mu.Lock()
+	l.Progresses.ProgressItems[p] = struct{}{}
+	l.Progresses.mu.Unlock()
 
+	l.Progresses.mu.RLock()
 	l.PrintProgressFunc(l)
+	l.Progresses.mu.RUnlock()
 
 	return p
 }
