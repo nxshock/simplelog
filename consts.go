@@ -17,8 +17,8 @@ const (
 
 var (
 	defaultTimestampStyle = color.New(color.FgHiBlack).SprintFunc()
-	defaultTraceStyle     = color.New(color.FgWhite).SprintFunc()
-	defaultDebugStyle     = color.New(color.FgWhite).SprintFunc()
+	defaultTraceStyle     = color.New(color.FgHiBlack).SprintFunc()
+	defaultDebugStyle     = color.New(color.FgHiBlack).SprintFunc()
 	// defaultInfoStyle uses default terminal foreground color
 	defaultWarningStyle  = color.New(color.FgYellow).SprintFunc()
 	defaultErrorStyle    = color.New(color.FgRed).SprintFunc()
