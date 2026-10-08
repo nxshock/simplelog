@@ -58,10 +58,9 @@ func (p *Progress) Until() *UntilCalculator {
 }
 
 func (p *Progress) Percent() uint {
-	if p.Estimated()-p.Elapsed() == 0 {
+	if p.Estimated() <= 0 {
 		return 100
 	}
 
 	return p.Elapsed() * 100 / p.Estimated()
-
 }
