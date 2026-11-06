@@ -17,12 +17,12 @@ type ProgressItem struct {
 }
 
 // NewTimeCalc returns new time calculator with `estimated` tasks count.
-func (l *Logger) NewProgress(estimated uint) *ProgressItem {
-	return l.NewProgressCustom(estimated, DEFAULT_PERIOD_DURATION)
+func (l *Logger) newProgress(estimated uint) *ProgressItem {
+	return l.newProgressCustom(estimated, DEFAULT_PERIOD_DURATION)
 }
 
 // NewTimeCalcCustom returns new time calculator with `estimated` tasks count and `periodSize` size of periods.
-func (l *Logger) NewProgressCustom(estimated uint, periodSize time.Duration) *ProgressItem {
+func (l *Logger) newProgressCustom(estimated uint, periodSize time.Duration) *ProgressItem {
 	now := time.Now()
 
 	t := &ProgressItem{

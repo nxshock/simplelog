@@ -27,17 +27,17 @@ var (
 
 	defaultPrintProgressFunc = func(l *Logger) {
 		if tc := l.Progresses.ActiveTaskCount(); tc > 1 {
-			l.Progressf("[%2d%%] %d / %d (%d), %s",
+			l.Progressf("[%2d%%] %s / %s (%d), %s",
 				l.Progresses.Percent(),
-				l.Progresses.Elapsed(),
-				l.Progresses.Estimated(),
+				shortify(l.Progresses.Elapsed()),
+				shortify(l.Progresses.Estimated()),
 				tc,
 				l.Progresses.Remaining().LastPeriod().Truncate(time.Second))
 		} else {
-			l.Progressf("[%2d%%] %d / %d, %s",
+			l.Progressf("[%2d%%] %s / %s, %s",
 				l.Progresses.Percent(),
-				l.Progresses.Elapsed(),
-				l.Progresses.Estimated(),
+				shortify(l.Progresses.Elapsed()),
+				shortify(l.Progresses.Estimated()),
 				l.Progresses.Remaining().LastPeriod().Truncate(time.Second))
 		}
 	}

@@ -309,7 +309,7 @@ func (l *Logger) p(logLevel LogLevel, s string) (n int, err error) {
 }
 
 func (l *Logger) StartProgress(estimated uint) *ProgressItem {
-	p := l.NewProgress(estimated)
+	p := l.newProgress(estimated)
 
 	l.Progresses.mu.Lock()
 	l.Progresses.ProgressItems[p] = struct{}{}
