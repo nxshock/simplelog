@@ -10,7 +10,7 @@ const (
 	defaultFileTimestampFormat     = "2006-01-02 15:04:05"
 	defaultTerminalTimestampFormat = "15:04:05"
 	defaulLogLevel                 = LogLevelInfo
-	defaultTrimMarker              = "..."
+	defaultTrimMarker              = "…"
 
 	DEFAULT_PERIOD_DURATION = time.Minute
 )
