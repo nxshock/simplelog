@@ -279,7 +279,7 @@ func (l *Logger) p(logLevel LogLevel, s string) (n int, err error) {
 			msg.fit(l.getWidth(), l.TrimMarker)
 		}
 
-		if msg.TimeStamp != "" {
+		if msg.TimeStamp != "" && !l.DisableColor {
 			msg.TimeStamp = l.TimeStampStyle(msg.TimeStamp)
 		}
 		if !l.DisableColor {
