@@ -36,6 +36,9 @@ type Logger struct {
 	// MinProgressUpdatePeriod is used to limit progress update speed
 	MinProgressUpdatePeriod time.Duration
 
+	// Disable color output
+	DisableColor bool
+
 	// is output to terminal
 	isTerminal bool
 
@@ -212,7 +215,7 @@ func (l *Logger) timestamp(t time.Time) string {
 		return ""
 	}
 
-	if !l.isTerminal {
+	if !l.isTerminal || l.DisableColor {
 		return t.Format(l.TimeFormat)
 	}
 
@@ -279,9 +282,11 @@ func (l *Logger) p(logLevel LogLevel, s string) (n int, err error) {
 		if msg.TimeStamp != "" {
 			msg.TimeStamp = l.TimeStampStyle(msg.TimeStamp)
 		}
-		style, exists := l.Styles[logLevel]
-		if exists && style != nil {
-			msg.Text = l.Styles[logLevel](msg.Text)
+		if !l.DisableColor {
+			style, exists := l.Styles[logLevel]
+			if exists && style != nil {
+				msg.Text = l.Styles[logLevel](msg.Text)
+			}
 		}
 	} else {
 		msg.Prefix = l.prefix(logLevel)
